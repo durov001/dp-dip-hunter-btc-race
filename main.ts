@@ -27,7 +27,12 @@
 //       entry, so it is the effective stop in normal conditions).
 //     - Hard stop: position value <= -2.5% under cost (a gap backstop; the trail fires
 //       first in every ordinary move).
-//     - Time stop: 300 bars after entry.
+//     - Time stop: 360 bars after entry. Recoveries take 200+ bars to play out
+//      (trade 1: 239 bars), and the sensitivity sweep favored longer holds (120 bars
+//      exits before the recovery completes and loses money). On the dev window the
+//      old 300-bar cap cut trade 2 mid-recovery (it exited at exactly seq 980 =
+//      680+300); with 360 bars it rides to seq 1040 and earns $1.71 more
+//      (dev PnL $16.01 -> $17.72).
 //   RISK:
 //     - 30-bar cooldown after every exit (no re-entry into the same selloff).
 //     - Emergency brake: at -15% equity drawdown from the run peak, flatten and halt.
@@ -36,7 +41,7 @@
 //     - Orders cap slippage at 100 bps past the decision close.
 //   EXPECTATION: 0-3 trades per 24h window. On a window with no deep dip it trades
 //   nothing and scores ~$0 (no loss). On a window with a recovery event it aims to
-//   capture most of it at full size. Dev backtest (exact-cost replay): +$16.01 net PnL,
+//   capture most of it at full size. Dev backtest (exact-cost replay): +$17.72 net PnL,
 //   0.64% max drawdown, 2 round trips, 2 wins.
 //
 // Determinism: indicators run in float64 on + - * / alone (IEEE 754, correctly rounded);
@@ -65,8 +70,13 @@ const TAKE_PROFIT_BPS = 150;
 const STOP_BPS = 250;
 /** Trailing stop: giveback from the highest close since entry, in bps. Active from entry. */
 const TRAIL_BPS = 80;
-/** Longest a position is held, in bars. */
-const MAX_HOLD_BARS = 300;
+/** Longest a position is held, in bars. 360, not 300: the dev window's recoveries
+ *  take 200+ bars (trade 1 held 239), and the sensitivity sweep favored longer
+ *  holds (120 bars exits before the recovery completes and loses money). On dev,
+ *  the 300-bar cap cut trade 2 mid-recovery (exit at exactly seq 980 = 680+300);
+ *  with 360 bars it rides to seq 1040 and earns $1.71 more (dev PnL $16.01
+ *  -> $17.72). */
+const MAX_HOLD_BARS = 360;
 
 // --- risk parameters ---
 /** Bars to wait after an exit before a new entry. */
